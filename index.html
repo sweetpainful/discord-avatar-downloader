@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discord Avatar & Banner Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0720; --card:rgba(255,255,255,.07); --line:rgba(255,255,255,.14);
+  --text:#f6f2ff; --muted:#b4a9d6;
+  --blurple:#6b5cff; --pink:#ff3cac; --cyan:#2bd9fe; --lime:#c6ff3d;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Bricolage Grotesque',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;
+  overflow-x:hidden;position:relative;
+}
+/* animated background */
+.blob{position:fixed;border-radius:50%;filter:blur(90px);opacity:.55;z-index:0;pointer-events:none;animation:float 14s ease-in-out infinite}
+.b1{width:480px;height:480px;background:var(--blurple);top:-120px;left:-100px}
+.b2{width:420px;height:420px;background:var(--pink);bottom:-140px;right:-80px;animation-delay:-5s}
+.b3{width:320px;height:320px;background:var(--cyan);top:40%;left:55%;opacity:.35;animation-delay:-9s}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(60px,-40px) scale(1.12)}66%{transform:translate(-50px,50px) scale(.94)}}
+#glow{position:fixed;width:360px;height:360px;border-radius:50%;pointer-events:none;z-index:1;
+  background:radial-gradient(circle,rgba(43,217,254,.22),transparent 65%);transform:translate(-50%,-50%);left:-400px;top:-400px}
+.wrap{position:relative;z-index:2;max-width:880px;margin:0 auto;padding:56px 20px 80px}
+
+/* hero */
+h1{font-size:clamp(2.6rem,9vw,5.2rem);font-weight:800;line-height:.98;letter-spacing:-.03em}
+h1 span{display:inline-block;background:linear-gradient(90deg,var(--cyan),var(--pink),var(--lime),var(--cyan));background-size:300% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 5s linear infinite}
+h1 span:nth-child(2){animation-delay:-1.2s}
+h1 .ch{display:inline-block;opacity:0;transform:translateY(40px) rotate(6deg);animation:pop .7s cubic-bezier(.2,1.4,.4,1) forwards}
+@keyframes pop{to{opacity:1;transform:none}}
+@keyframes shine{to{background-position:300% 0}}
+.sub{margin-top:18px;color:var(--muted);font-size:1.1rem;max-width:520px;line-height:1.5}
+
+/* search */
+.search{margin-top:36px;padding:22px;border-radius:24px;background:var(--card);border:1px solid var(--line);backdrop-filter:blur(14px);
+  position:relative;overflow:hidden}
+.search::before{content:"";position:absolute;inset:0;border-radius:24px;padding:2px;
+  background:conic-gradient(from var(--a,0deg),var(--blurple),var(--pink),var(--cyan),var(--lime),var(--blurple));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+  animation:spin 6s linear infinite;pointer-events:none}
+@property --a{syntax:'<angle>';initial-value:0deg;inherits:false}
+@keyframes spin{to{--a:360deg}}
+label{font-weight:600;font-size:1rem}
+.hint{color:var(--muted);font-size:.88rem;margin:6px 0 14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+input{flex:1;min-width:200px;padding:15px 18px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.35);
+  color:var(--text);font:600 1.05rem 'JetBrains Mono',monospace;outline:none;transition:.2s}
+input::placeholder{color:#6f6597;font-weight:400}
+input:focus{border-color:var(--cyan);box-shadow:0 0 0 4px rgba(43,217,254,.18)}
+button{font-family:inherit;cursor:pointer}
+.go{padding:15px 26px;border:0;border-radius:14px;font-weight:800;font-size:1rem;color:#fff;
+  background:linear-gradient(135deg,var(--blurple),var(--pink));transition:.2s;position:relative;overflow:hidden}
+.go:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 10px 30px rgba(255,60,172,.45)}
+.go:active{transform:scale(.97)}
+.go.load::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:sweep .8s infinite}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.err{display:none;margin-top:14px;padding:12px 16px;border-radius:12px;background:rgba(255,60,90,.15);border:1px solid rgba(255,60,90,.5);color:#ffb3c0;font-size:.95rem}
+.err.show{display:block;animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+/* result */
+#result{display:none;margin-top:26px}
+#result.show{display:block}
+.card{border-radius:24px;background:var(--card);border:1px solid var(--line);backdrop-filter:blur(14px);overflow:hidden;
+  animation:rise .7s cubic-bezier(.2,1.2,.4,1)}
+@keyframes rise{from{opacity:0;transform:translateY(50px) scale(.95)}to{opacity:1;transform:none}}
+.profile{display:flex;gap:20px;align-items:center;padding:24px;flex-wrap:wrap}
+.pfp{width:96px;height:96px;border-radius:50%;object-fit:cover;border:4px solid transparent;
+  background:linear-gradient(var(--bg),var(--bg)) padding-box,linear-gradient(135deg,var(--cyan),var(--pink),var(--lime)) border-box;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 10px rgba(255,60,172,.18)}}
+.name{font-size:1.9rem;font-weight:800;letter-spacing:-.02em}
+.mono{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--muted)}
+.mono b{color:var(--text);font-weight:600}
+.tabs{display:flex;gap:8px;padding:0 24px}
+.tab{padding:10px 20px;border-radius:12px 12px 0 0;border:1px solid var(--line);border-bottom:0;background:transparent;color:var(--muted);font-weight:600;font-size:1rem;transition:.2s}
+.tab.on{background:linear-gradient(135deg,var(--blurple),var(--pink));color:#fff;border-color:transparent}
+.panel{margin:0 24px;padding:20px 0 4px;border-top:1px solid var(--line)}
+.opts{display:grid;grid-template-columns:1fr 1.6fr;gap:22px}
+@media(max-width:640px){.opts{grid-template-columns:1fr}}
+.gl{font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:8px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);font:600 .85rem 'JetBrains Mono',monospace;transition:.18s}
+.chip:hover{border-color:var(--cyan);transform:translateY(-2px)}
+.chip.on{background:var(--lime);color:#14102a;border-color:var(--lime);transform:scale(1.06)}
+.preview{margin:22px 24px 24px;padding:18px;border-radius:18px;background:rgba(0,0,0,.3);border:1px solid var(--line);display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.preview img{max-width:170px;max-height:170px;border-radius:14px;object-fit:cover;background:#1b1436;transition:transform .3s}
+.preview img:hover{transform:rotate(-2deg) scale(1.05)}
+.preview img.wide{max-width:100%;width:100%;max-height:none;aspect-ratio:3/1}
+.side{flex:1;min-width:220px;display:flex;flex-direction:column;gap:12px}
+.url{font:.78rem 'JetBrains Mono',monospace;color:var(--muted);word-break:break-all}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.dl{padding:12px 20px;border:0;border-radius:12px;font-weight:800;color:#14102a;background:linear-gradient(135deg,var(--lime),var(--cyan));transition:.2s}
+.dl:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(198,255,61,.4)}
+.ghost{padding:12px 18px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font-weight:600;transition:.2s}
+.ghost:hover{border-color:var(--pink);color:var(--pink)}
+.none{padding:30px;text-align:center;color:var(--muted);flex:1}
+.none big{display:block;font-size:2.4rem;margin-bottom:6px;animation:float 3s ease-in-out infinite}
+.foot{margin-top:40px;text-align:center;color:var(--muted);font-size:.85rem}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}h1 .ch{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div id="glow"></div>
+
+<main class="wrap">
+  <h1 id="title" aria-label="Encuentra cualquier avatar y banner de Discord">
+    <span>Avatar</span> y <span>Banner</span><br>de Discord
+  </h1>
+  <p class="sub">Pega un ID de usuario y descarga su foto de perfil y su banner en HD.</p>
+
+  <section class="search">
+    <label for="uid">ID de usuario de Discord</label>
+    <p class="hint">Activa el Modo desarrollador (Ajustes → Avanzado), luego clic derecho en un usuario y elige “Copiar ID de usuario”.</p>
+    <div class="row">
+      <input id="uid" inputmode="numeric" autocomplete="off" placeholder="ej. 651512648123456789">
+      <button class="go" id="go">Buscar</button>
+    </div>
+    <div class="err" id="err" role="alert"></div>
+  </section>
+
+  <section id="result">
+    <div class="card">
+      <div class="profile">
+        <img class="pfp" id="pfp" alt="">
+        <div>
+          <div class="name" id="name"></div>
+          <div class="mono" id="user"></div>
+          <div class="mono">ID: <b id="rid"></b></div>
+          <div class="mono">Cuenta creada: <b id="created"></b></div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab on" data-t="avatar">Avatar</button>
+        <button class="tab" data-t="banner">Banner</button>
+      </div>
+      <div class="panel">
+        <div class="opts">
+          <div><div class="gl">Formato</div><div class="chips" id="fmts"></div></div>
+          <div><div class="gl">Tamaño</div><div class="chips" id="sizes"></div></div>
+        </div>
+      </div>
+      <div class="preview" id="preview"></div>
+    </div>
+  </section>
+
+  <p class="foot">Los datos públicos vienen de la API de Discord a través de un servicio intermedio.</p>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const SIZES = [128,256,512,1024,2048,4096];
+const FMTS = ['png','webp','jpg'];
+const state = {data:null, tab:'avatar', fmt:'png', size:1024};
+
+/* animated title letters (one-time page load) */
+(function(){
+  let i = 0;
+  const walk = n => {
+    [...n.childNodes].forEach(c => {
+      if(c.nodeType === 3){
+        const f = document.createDocumentFragment();
+        [...c.textContent].forEach(ch => {
+          const s = document.createElement('span');
+          s.className = 'ch'; s.textContent = ch === ' ' ? '\u00a0' : ch;
+          s.style.animationDelay = (i++ * 35) + 'ms'; f.appendChild(s);
+        });
+        c.replaceWith(f);
+      } else if(c.nodeType === 1 && c.tagName !== 'BR'){
+        const wrap = c; wrap.style.display = 'inline';
+        walk(c);
+      }
+    });
+  };
+  walk($('#title'));
+})();
+
+/* cursor glow */
+addEventListener('pointermove', e => { const g = $('#glow'); g.style.left = e.clientX + 'px'; g.style.top = e.clientY + 'px'; });
+
+const createdFromId = id => new Date(Number((BigInt(id) >> 22n) + 1420070400000n));
+const cdn = (kind, id, hash, fmt, size) =>
+  `https://cdn.discordapp.com/${kind}/${id}/${hash}.${fmt}?size=${size}`;
+
+/* Discord only exposes banners through the bot API (needs a secret token),
+   so we use public lookup services that already do that server-side. */
+async function lookup(id){
+  const sources = [
+    async () => {
+      const r = await fetch(`https://discordlookup.masterapi.fr/user/${id}`);
+      if(!r.ok) throw new Error(r.status);
+      const d = await r.json();
+      return {username:d.username, name:d.global_name, avatar:d.avatar && d.avatar.id, banner:d.banner && d.banner.id, color:(d.banner && d.banner.color) || d.banner_color};
+    },
+    async () => {
+      const r = await fetch(`https://dcdn.dstn.to/profile/${id}`);
+      if(!r.ok) throw new Error(r.status);
+      const d = await r.json(), u = d.user || {};
+      return {username:u.username, name:u.global_name, avatar:u.avatar, banner:u.banner, color:u.banner_color};
+    }
+  ];
+  let lastErr;
+  for(const s of sources){ try{ const r = await s(); if(r && r.username) return r; }catch(e){ lastErr = e; } }
+  throw lastErr || new Error('fail');
+}
+
+function showErr(msg){ const e = $('#err'); e.textContent = msg; e.classList.remove('show'); void e.offsetWidth; e.classList.add('show'); }
+
+async function search(){
+  const id = $('#uid').value.trim();
+  $('#err').classList.remove('show');
+  if(!/^\d{17,20}$/.test(id)) return showErr('Ese ID no es válido. Debe ser un número de 17 a 20 dígitos.');
+  const btn = $('#go'); btn.classList.add('load'); btn.textContent = 'Buscando…';
+  try{
+    const d = await lookup(id);
+    state.data = {...d, id};
+    state.tab = 'avatar';
+    history.replaceState(null,'','#'+id);
+    render(true);
+  }catch(e){
+    $('#result').classList.remove('show');
+    showErr('No encontramos ese usuario o el servicio no respondió. Revisa el ID e intenta otra vez.');
+  }finally{ btn.classList.remove('load'); btn.textContent = 'Buscar'; }
+}
+
+function chips(el, items, key, label){
+  el.innerHTML = '';
+  items.forEach(v => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (state[key] === v ? ' on' : '');
+    b.textContent = label(v);
+    b.onclick = () => { state[key] = v; render(); };
+    el.appendChild(b);
+  });
+}
+
+function render(fresh){
+  const d = state.data, res = $('#result');
+  if(fresh){ res.classList.remove('show'); void res.offsetWidth; }
+  res.classList.add('show');
+  const animA = d.avatar && d.avatar.startsWith('a_');
+  $('#pfp').src = d.avatar ? cdn('avatars', d.id, d.avatar, animA ? 'gif' : 'png', 256)
+    : `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(d.id) >> 22n) % 6n)}.png`;
+  $('#name').textContent = d.name || d.username;
+  $('#user').textContent = '@' + d.username;
+  $('#rid').textContent = d.id;
+  $('#created').textContent = createdFromId(d.id).toLocaleDateString('es',{year:'numeric',month:'long',day:'numeric'});
+
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('on', t.dataset.t === state.tab);
+    t.onclick = () => { state.tab = t.dataset.t; render(); };
+  });
+
+  const hash = state.tab === 'avatar' ? d.avatar : d.banner;
+  const kind = state.tab === 'avatar' ? 'avatars' : 'banners';
+  const animated = hash && hash.startsWith('a_');
+  const fmts = animated ? [...FMTS,'gif'] : FMTS;
+  if(!fmts.includes(state.fmt)) state.fmt = 'png';
+  chips($('#fmts'), fmts, 'fmt', v => v.toUpperCase());
+  chips($('#sizes'), SIZES, 'size', v => v + 'px');
+
+  const p = $('#preview');
+  if(!hash){
+    const color = d.color ? `<div style="height:70px;border-radius:12px;margin-top:12px;background:${d.color}"></div>` : '';
+    p.innerHTML = state.tab === 'banner'
+      ? `<div class="none"><big>🫥</big>Este usuario no tiene banner.${color}</div>`
+      : `<div class="none"><big>🫥</big>Este usuario usa el avatar por defecto.</div>`;
+    return;
+  }
+  const url = cdn(kind, d.id, hash, state.fmt, state.size);
+  const wide = state.tab === 'banner';
+  p.innerHTML = `
+    <img class="${wide ? 'wide' : ''}" src="${cdn(kind, d.id, hash, animated ? 'gif' : 'png', wide ? 600 : 256)}" alt="${state.tab}">
+    <div class="side">
+      <div class="url">${url}</div>
+      <div class="btns">
+        <button class="dl" id="dl">Descargar ${state.fmt.toUpperCase()} (${state.size}px)</button>
+        <button class="ghost" id="copy">Copiar enlace</button>
+        <button class="ghost" id="open">Abrir</button>
+      </div>
+    </div>`;
+  $('#open').onclick = () => window.open(url,'_blank');
+  $('#copy').onclick = async e => { try{ await navigator.clipboard.writeText(url); e.target.textContent = '¡Copiado!'; setTimeout(()=>e.target.textContent='Copiar enlace',1400);}catch{ prompt('Copia el enlace:', url);} };
+  $('#dl').onclick = async e => {
+    const b = e.target, old = b.textContent; b.textContent = 'Descargando…';
+    try{
+      const blob = await (await fetch(url)).blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${d.username}-${state.tab}-${state.size}.${state.fmt}`;
+      a.click(); URL.revokeObjectURL(a.href);
+    }catch{ window.open(url,'_blank'); }
+    b.textContent = old;
+  };
+}
+
+$('#go').onclick = search;
+$('#uid').addEventListener('keydown', e => { if(e.key === 'Enter') search(); });
+if(/^#\d{17,20}$/.test(location.hash)){ $('#uid').value = location.hash.slice(1); search(); }
+</script>
+</body>
+</html>
